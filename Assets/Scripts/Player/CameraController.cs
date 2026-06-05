@@ -12,6 +12,7 @@ namespace Autobazar.Player
         [SerializeField] private float distance = 8.5f;
         [SerializeField] private float height = 3.6f;
         [SerializeField] private float lookHeight = 1.4f;
+        [SerializeField] private float lookAhead = 4.5f;
         [SerializeField] private float followSmooth = 9f;
         [SerializeField] private float rotateSmooth = 7f;
 
@@ -48,7 +49,7 @@ namespace Autobazar.Player
 
             Vector3 desired = DesiredPosition(_yaw);
             transform.position = Vector3.Lerp(transform.position, desired, followSmooth * Time.deltaTime);
-            transform.LookAt(_target.position + Vector3.up * lookHeight);
+            transform.LookAt(LookTarget());
 
             if (_cam != null && _car != null)
             {
@@ -60,7 +61,12 @@ namespace Autobazar.Player
         private void SnapBehind()
         {
             transform.position = DesiredPosition(_yaw);
-            transform.LookAt(_target.position + Vector3.up * lookHeight);
+            transform.LookAt(LookTarget());
+        }
+
+        private Vector3 LookTarget()
+        {
+            return _target.position + _target.forward * lookAhead + Vector3.up * lookHeight;
         }
 
         private Vector3 DesiredPosition(float yaw)

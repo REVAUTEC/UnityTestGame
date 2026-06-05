@@ -3,25 +3,29 @@ using UnityEngine;
 namespace Autobazar.Vehicles
 {
     /// <summary>
-    /// Arcade řízení auta (bez fyziky). W = plyn, S = brzda/couvání, A/D = zatáčení,
-    /// Shift = boost. Auto se naklání do zatáček. Rychlost je k dispozici pro HUD.
+    /// Arcade řízení auta s „grip" pocitem: auto má setrvačnost, ve vyšší rychlosti se
+    /// míň stáčí a v ostrých zatáčkách lehce smýká (drift). W plyn, S brzda/couvání,
+    /// A/D zatáčení, Shift boost. Auto se naklání do zatáček. Stabilní (bez fyziky).
     /// </summary>
     public class CarController : MonoBehaviour
     {
         public bool ControlEnabled;
 
-        [SerializeField] private float maxSpeed = 21f;
-        [SerializeField] private float boostSpeed = 32f;
+        [SerializeField] private float maxSpeed = 22f;
+        [SerializeField] private float boostSpeed = 33f;
         [SerializeField] private float reverseSpeed = 7f;
-        [SerializeField] private float accel = 17f;
+        [SerializeField] private float accel = 16f;
         [SerializeField] private float brakeDecel = 26f;
         [SerializeField] private float coastDecel = 8f;
-        [SerializeField] private float turnSpeed = 95f;
+        [SerializeField] private float turnSpeed = 105f;
+        [SerializeField] private float gripHigh = 9f;   // přilnavost při nízké rychlosti
+        [SerializeField] private float gripLow = 4.5f;  // přilnavost při vysoké rychlosti (víc smyku)
         [SerializeField] private float leanAmount = 8f;
 
         private float _speed;
         private float _groundY;
         private float _lean;
+        private Vector3 _moveDir = Vector3.forward;
 
         private Transform _visual;
         private Quaternion _visualBaseRot = Quaternion.identity;
@@ -33,6 +37,7 @@ namespace Autobazar.Vehicles
         private void Awake()
         {
             _groundY = transform.position.y;
+            _moveDir = transform.forward;
             _visual = transform.Find("Model");
             if (_visual != null) _visualBaseRot = _visual.localRotation;
         }
@@ -42,17 +47,18 @@ namespace Autobazar.Vehicles
             _speed = 0f;
             _lean = 0f;
             Boosting = false;
+            _moveDir = transform.forward;
         }
 
         public void SetGroundY(float y) => _groundY = y;
 
         private void Update()
         {
-            float throttle = 0f, steer = 0f;
+            float steer = 0f;
 
             if (ControlEnabled)
             {
-                throttle = Input.GetAxisRaw("Vertical");
+                float throttle = Input.GetAxisRaw("Vertical");
                 steer = Input.GetAxisRaw("Horizontal");
                 Boosting = Input.GetKey(KeyCode.LeftShift) && throttle > 0.1f;
 
@@ -61,10 +67,18 @@ namespace Autobazar.Vehicles
                 else if (throttle < -0.1f) _speed = Mathf.MoveTowards(_speed, -reverseSpeed, brakeDecel * Time.deltaTime);
                 else _speed = Mathf.MoveTowards(_speed, 0f, coastDecel * Time.deltaTime);
 
+                // Ve vyšší rychlosti se auto stáčí pomaleji (není to twitchy).
                 if (Mathf.Abs(_speed) > 0.4f)
-                    transform.Rotate(0f, steer * turnSpeed * Mathf.Sign(_speed) * Time.deltaTime, 0f);
+                {
+                    float turn = turnSpeed * Mathf.Lerp(1f, 0.6f, Speed01) * Mathf.Sign(_speed);
+                    transform.Rotate(0f, steer * turn * Time.deltaTime, 0f);
+                }
 
-                transform.position += transform.forward * (_speed * Time.deltaTime);
+                // Setrvačnost / smyk: směr pohybu dojíždí k tomu, kam auto míří.
+                float grip = Mathf.Lerp(gripHigh, gripLow, Speed01) * (Boosting ? 0.8f : 1f);
+                _moveDir = Vector3.Slerp(_moveDir, transform.forward, grip * Time.deltaTime).normalized;
+
+                transform.position += _moveDir * (_speed * Time.deltaTime);
                 var p = transform.position; p.y = _groundY; transform.position = p;
             }
             else
