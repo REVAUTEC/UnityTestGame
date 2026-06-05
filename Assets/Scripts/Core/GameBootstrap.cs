@@ -16,7 +16,7 @@ namespace Autobazar.Core
 
         private void Awake()
         {
-            if (buildOnPlay) WorldBuilder.BuildWorld();
+            if (buildOnPlay) RaceWorldBuilder.BuildWorld();
         }
     }
 }

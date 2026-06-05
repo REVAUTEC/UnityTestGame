@@ -7,37 +7,43 @@ using Autobazar.Core;
 namespace Autobazar.EditorTools
 {
     /// <summary>
-    /// Položky v horním menu Unity ("Autobazar"), které postaví nebo smažou
-    /// scénu Fáze 1 přímo v editoru – nemusíš nic skládat ručně.
+    /// Menu „Checkpoint Rush" pro postavení/přestavění/vyčištění závodní scény přímo v editoru.
     /// </summary>
     public static class Phase1SceneBuilder
     {
-        [MenuItem("Autobazar/Build Phase 1 Scene")]
-        public static void BuildPhase1()
+        [MenuItem("Checkpoint Rush/Build Scene")]
+        public static void BuildScene()
         {
-            WorldBuilder.BuildWorld();
+            RaceWorldBuilder.BuildWorld();
             EditorSceneManager.MarkAllScenesDirty();
-            Debug.Log("[Autobazar] Hotovo. Ulož scénu (Ctrl+S) a stiskni Play.");
+            Debug.Log("[CheckpointRush] Hotovo. Ulož scénu (Ctrl+S) a stiskni Play.");
         }
 
-        [MenuItem("Autobazar/Rebuild Scene (Clear + Build)")]
+        [MenuItem("Checkpoint Rush/Rebuild Scene (Clear + Build)")]
         public static void RebuildScene()
         {
-            // Použij po každém stažení nového kódu, ať se svět postaví podle nové verze.
-            DestroyByName("AutobazarWorld");
-            DestroyByName("Sun");
-            WorldBuilder.BuildWorld();
+            ClearAll();
+            RaceWorldBuilder.BuildWorld();
             EditorSceneManager.MarkAllScenesDirty();
-            Debug.Log("[Autobazar] Scéna přestavěna podle aktuálního kódu. Ulož (Ctrl+S) a Play.");
+            Debug.Log("[CheckpointRush] Scéna přestavěna. Ulož (Ctrl+S) a Play.");
         }
 
-        [MenuItem("Autobazar/Clear Scene")]
+        [MenuItem("Checkpoint Rush/Clear Scene")]
         public static void ClearScene()
         {
-            DestroyByName("AutobazarWorld");
-            DestroyByName("Sun");
+            ClearAll();
             EditorSceneManager.MarkAllScenesDirty();
-            Debug.Log("[Autobazar] Scéna vyčištěna. Můžeš znovu spustit Build Phase 1 Scene.");
+            Debug.Log("[CheckpointRush] Scéna vyčištěna.");
+        }
+
+        private static void ClearAll()
+        {
+            DestroyByName("RaceWorld");
+            DestroyByName("Track");
+            DestroyByName("Sun");
+            // úklid po staré verzi (autobazar)
+            DestroyByName("AutobazarWorld");
+            DestroyByName("GameManagers");
         }
 
         private static void DestroyByName(string name)

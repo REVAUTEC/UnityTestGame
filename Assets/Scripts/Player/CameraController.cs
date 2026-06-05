@@ -1,58 +1,54 @@
 using UnityEngine;
-using Autobazar.Core;
 
 namespace Autobazar.Player
 {
     /// <summary>
-    /// Kamera třetí osoby. Drží se za hráčem, horizontálně kopíruje jeho natočení
-    /// (to řídí PlayerController myší), a myší ovládá náklon nahoru/dolů (pitch).
+    /// Kamera za autem (chase cam). Drží se za cílem podle jeho natočení, plynule dojíždí
+    /// a dívá se na auto. Žádné ovládání myší – ideální pro závodění.
     /// </summary>
     public class CameraController : MonoBehaviour
     {
-        [SerializeField] private Transform target;          // hráč
-        [SerializeField] private float distance = 6f;       // vzdálenost za hráčem
-        [SerializeField] private float height = 2.4f;       // výška, na kterou se kamera dívá
-        [SerializeField] private float mouseSensitivity = 3f;
-        [SerializeField] private float minPitch = -20f;
-        [SerializeField] private float maxPitch = 60f;
-        [SerializeField] private float followSmooth = 12f;
+        [SerializeField] private float distance = 8.5f;
+        [SerializeField] private float height = 3.6f;
+        [SerializeField] private float lookHeight = 1.4f;
+        [SerializeField] private float followSmooth = 9f;
+        [SerializeField] private float rotateSmooth = 7f;
 
-        private float _pitch = 15f;
-        private PlayerController _playerController;
+        private Transform _target;
+        private float _yaw;
 
-        /// <summary>Nastaví cíl (volá WorldBuilder při skládání scény).</summary>
         public void SetTarget(Transform t)
         {
-            target = t;
-            if (target != null) _playerController = target.GetComponent<PlayerController>();
-        }
-
-        private void Start()
-        {
-            if (target != null && _playerController == null)
-                _playerController = target.GetComponent<PlayerController>();
+            _target = t;
+            if (t != null)
+            {
+                _yaw = t.eulerAngles.y;
+                SnapBehind();
+            }
         }
 
         private void LateUpdate()
         {
-            if (target == null) return;
+            if (_target == null) return;
 
-            if (!GameState.InputLocked && Cursor.lockState == CursorLockMode.Locked)
-            {
-                _pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-                _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
-            }
+            // Plynule dorovnáváme natočení za auto.
+            _yaw = Mathf.LerpAngle(_yaw, _target.eulerAngles.y, rotateSmooth * Time.deltaTime);
 
-            // Horizontální úhel bereme z hráče, vertikální z myši.
-            float yaw = _playerController != null ? _playerController.Yaw : target.eulerAngles.y;
-            Quaternion rotation = Quaternion.Euler(_pitch, yaw, 0f);
+            Vector3 desired = DesiredPosition(_yaw);
+            transform.position = Vector3.Lerp(transform.position, desired, followSmooth * Time.deltaTime);
+            transform.LookAt(_target.position + Vector3.up * lookHeight);
+        }
 
-            Vector3 pivot = target.position + Vector3.up * height;
-            Vector3 desiredPos = pivot - rotation * Vector3.forward * distance;
+        private void SnapBehind()
+        {
+            transform.position = DesiredPosition(_yaw);
+            transform.LookAt(_target.position + Vector3.up * lookHeight);
+        }
 
-            // Plynulé dojetí kamery.
-            transform.position = Vector3.Lerp(transform.position, desiredPos, followSmooth * Time.deltaTime);
-            transform.LookAt(pivot);
+        private Vector3 DesiredPosition(float yaw)
+        {
+            Vector3 back = Quaternion.Euler(0f, yaw, 0f) * Vector3.back;
+            return _target.position + back * distance + Vector3.up * height;
         }
     }
 }
