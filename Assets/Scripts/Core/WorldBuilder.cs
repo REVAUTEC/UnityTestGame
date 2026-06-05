@@ -118,7 +118,11 @@ namespace Autobazar.Core
             if (Object.FindFirstObjectByType<CarServiceUI>() == null) go.AddComponent<CarServiceUI>();
             if (Object.FindFirstObjectByType<TestDriveManager>() == null) go.AddComponent<TestDriveManager>();
             if (Object.FindFirstObjectByType<DayManager>() == null) go.AddComponent<DayManager>();
+            if (Object.FindFirstObjectByType<MusicManager>() == null) go.AddComponent<MusicManager>();
+            if (Object.FindFirstObjectByType<CinematicOverlay>() == null) go.AddComponent<CinematicOverlay>();
             if (Object.FindFirstObjectByType<CustomerSpawner>() == null) go.AddComponent<CustomerSpawner>();
+            // Menu jako poslední – na začátku hru pozastaví (Enter spustí).
+            if (Object.FindFirstObjectByType<MenuManager>() == null) go.AddComponent<MenuManager>();
         }
 
         private static GameObject BuildPlayer(Transform parent)
@@ -179,29 +183,49 @@ namespace Autobazar.Core
 
         private static void BuildBuildings(Transform parent)
         {
-            // Kancelář (západ)
-            var wall = new Color(0.86f, 0.83f, 0.72f);
-            CreateBox("Office", parent, new Vector3(-22f, 2f, 0f), new Vector3(8f, 4f, 6f), wall, smoothness: 0.1f);
-            CreateBox("Office_Roof", parent, new Vector3(-22f, 4.1f, 0f), new Vector3(8.6f, 0.3f, 6.6f), new Color(0.4f, 0.2f, 0.18f));
-            CreateBox("Office_Door", parent, new Vector3(-18.1f, 1.1f, 0f), new Vector3(0.2f, 2.2f, 1.6f),
-                new Color(0.32f, 0.22f, 0.16f), collider: false);
-            // okna kanceláře
-            CreateGlassBox("Office_Win1", parent, new Vector3(-18.1f, 2.6f, -1.8f), new Vector3(0.1f, 1.2f, 1.4f));
-            CreateGlassBox("Office_Win2", parent, new Vector3(-18.1f, 2.6f, 1.8f), new Vector3(0.1f, 1.2f, 1.4f));
-            CreateSign("KANCELÁŘ", parent, new Vector3(-22f, 4.9f, 0f), new Color(1f, 0.95f, 0.7f));
+            // Kancelář (západ) – model budovy, jinak kvádr. Počítač na smlouvy stojí před ní.
+            BuildStructure(parent, "building-a", new Vector3(-22f, 0f, 0f), 90f, 6f,
+                new Vector3(8f, 5f, 6f), new Color(0.86f, 0.83f, 0.72f));
+            CreateSign("KANCELÁŘ", parent, new Vector3(-21f, 6.3f, 2.5f), new Color(1f, 0.95f, 0.7f));
 
-            // Servis / garáž (východ), otevřená doprostřed
-            var garage = new Color(0.5f, 0.52f, 0.56f);
-            CreateBox("Garage_BackWall", parent, new Vector3(25.5f, 2f, 0f), new Vector3(0.3f, 4f, 8f), garage);
-            CreateBox("Garage_WallN", parent, new Vector3(22f, 2f, 4f), new Vector3(7f, 4f, 0.3f), garage);
-            CreateBox("Garage_WallS", parent, new Vector3(22f, 2f, -4f), new Vector3(7f, 4f, 0.3f), garage);
-            CreateBox("Garage_Roof", parent, new Vector3(22f, 4.05f, 0f), new Vector3(7.4f, 0.3f, 8.4f), new Color(0.32f, 0.34f, 0.38f));
-            // žlutočerný pruh nad vraty
-            CreateBox("Garage_Stripe", parent, new Vector3(18.6f, 3.8f, 0f), new Vector3(0.2f, 0.5f, 8f),
-                MaterialFactory.CreateEmissive(new Color(0.9f, 0.7f, 0.1f), new Color(0.9f, 0.6f, 0.1f), 0.6f));
-            CreateSign("SERVIS", parent, new Vector3(19.5f, 4.7f, 0f), new Color(1f, 0.8f, 0.4f));
+            // Servis / garáž (východ)
+            BuildStructure(parent, "building-b", new Vector3(22f, 0f, 0f), -90f, 6f,
+                new Vector3(8f, 5f, 8f), new Color(0.5f, 0.52f, 0.56f));
+            CreateSign("SERVIS", parent, new Vector3(20f, 6.3f, 0f), new Color(1f, 0.8f, 0.4f));
+
+            // Skyline do pozadí (dekorace)
+            BuildStructure(parent, "building-skyscraper-a", new Vector3(-24f, 0f, 23f), 0f, 14f,
+                new Vector3(7f, 14f, 7f), new Color(0.45f, 0.5f, 0.6f));
+            BuildStructure(parent, "building-skyscraper-b", new Vector3(24f, 0f, 23f), 0f, 16f,
+                new Vector3(7f, 16f, 7f), new Color(0.5f, 0.52f, 0.58f));
+            BuildStructure(parent, "building-skyscraper-c", new Vector3(0f, 0f, 25f), 0f, 18f,
+                new Vector3(7f, 18f, 7f), new Color(0.42f, 0.46f, 0.54f));
 
             BuildOfficeDesk(parent);
+        }
+
+        /// <summary>Postaví budovu z modelu (Kits/Buildings), nebo náhradní kvádr.</summary>
+        private static void BuildStructure(Transform parent, string modelName, Vector3 pos, float yaw, float height,
+            Vector3 fallbackSize, Color fallbackColor)
+        {
+            var prefab = ModelLibrary.Load("Buildings", modelName);
+            if (prefab != null)
+            {
+                var root = new GameObject($"Building_{modelName}");
+                root.transform.SetParent(parent, false);
+                root.transform.position = pos;
+                root.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                if (ModelLibrary.Spawn(root, prefab, height, ModelLibrary.Fit.Height, fallbackColor, "Buildings", 0f) != null)
+                {
+                    var box = root.AddComponent<BoxCollider>();
+                    box.center = new Vector3(0f, height * 0.5f, 0f);
+                    box.size = new Vector3(fallbackSize.x, height, fallbackSize.z);
+                    return;
+                }
+                SafeDestroy(root);
+            }
+
+            CreateBox($"Building_{modelName}", parent, pos + Vector3.up * (fallbackSize.y * 0.5f), fallbackSize, fallbackColor);
         }
 
         private static void BuildOfficeDesk(Transform parent)

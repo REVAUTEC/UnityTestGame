@@ -162,10 +162,18 @@ namespace Autobazar.UI
             prt.anchorMin = prt.anchorMax = prt.pivot = new Vector2(0.5f, 0.5f);
             prt.sizeDelta = new Vector2(940, 600);
             prt.anchoredPosition = Vector2.zero;
-            _panel.AddComponent<Image>().color = new Color(0.06f, 0.07f, 0.06f, 0.92f);
+            _panel.AddComponent<Image>().color = new Color(0.06f, 0.07f, 0.06f, 0.95f);
+
+            // Barevná hlavička (servisní oranžová)
+            var header = new GameObject("Header");
+            header.transform.SetParent(_panel.transform, false);
+            var hrt = header.AddComponent<RectTransform>();
+            hrt.anchorMin = new Vector2(0f, 1f); hrt.anchorMax = new Vector2(1f, 1f); hrt.pivot = new Vector2(0.5f, 1f);
+            hrt.sizeDelta = new Vector2(0f, 86f); hrt.anchoredPosition = Vector2.zero;
+            header.AddComponent<Image>().color = new Color(0.75f, 0.45f, 0.1f, 0.97f);
 
             _titleText = CreateText(_panel.transform, "Title", new Vector2(0.5f, 1f),
-                new Vector2(0, -45), new Vector2(880, 70), 40, TextAnchor.MiddleCenter, Color.white);
+                new Vector2(0, -43), new Vector2(880, 70), 40, TextAnchor.MiddleCenter, Color.white);
 
             _bodyText = CreateText(_panel.transform, "Body", new Vector2(0.5f, 1f),
                 new Vector2(0, -110), new Vector2(860, 420), 30, TextAnchor.UpperLeft, Color.white);

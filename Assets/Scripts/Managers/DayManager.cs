@@ -16,6 +16,7 @@ namespace Autobazar.Managers
         [SerializeField] private float dayLength = 180f; // délka dne v sekundách
 
         public int Day { get; private set; } = 1;
+        public bool IsDayOver => _dayOver;
 
         private float _timeLeft;
         private bool _dayOver;

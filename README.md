@@ -4,10 +4,10 @@ Jednoduchá, zábavná 3D hra z prostředí autobazaru. Hraješ za prodavače: c
 areálu, prohlížíš auta, obsluhuješ zákazníky, připravuješ vozy v servisu, vyřizuješ
 papíry a prodáváš auta. Tohle je **MVP prototyp** stavěný po fázích.
 
-> **Stav: ✅ Fáze 1–5 (herní jádro hotové)** — svět, hráč, kamera, HUD; zákazníci; dialog a
-> prodej; servis; kancelář se smlouvami; testovací jízda; a **denní cyklus** se statistikou dne.
-> **3D modely**: auta, postavy a stromy se načítají z `Assets/Resources/Kits/` (s colormap texturou,
-> jinak náhradní barva). Modely chybí → hra běží na kostkách/kapslích (záloha).
+> **Stav: ✅ Kompletní hra** — herní jádro (Fáze 1–5): svět, prodej, servis, kancelář,
+> testovací jízda, denní cyklus. **3D modely** aut, postav, stromů i budov z `Assets/Resources/Kits/`.
+> **Navíc:** úvodní/pauzové menu s ovládáním (Enter/P), filmový nádech (viněta + teplý tón),
+> ambientní hudba na pozadí (generovaná v kódu), barevné hlavičky dialogů.
 
 ---
 
