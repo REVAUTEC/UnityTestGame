@@ -7,17 +7,14 @@ using Autobazar.Vehicles;
 namespace Autobazar.Racing
 {
     /// <summary>
-    /// Řídí celý závod: postaví trať z bran, řeší odpočet, měří čas, hlídá průjezd
-    /// branami v pořadí, vyhodnotí cíl a ukládá nejlepší čas. Stavový automat.
+    /// Řídí celý závod: postaví brány (podle TrackLayout), řeší odpočet, měří čas, hlídá
+    /// průjezd branami v pořadí, vyhodnotí cíl a ukládá nejlepší čas. Stavový automat.
     /// </summary>
     public class RaceManager : MonoBehaviour
     {
         private enum State { Menu, Countdown, Racing, Finished }
 
-        [SerializeField] private int gateCount = 8;
-        [SerializeField] private float radiusX = 34f;
-        [SerializeField] private float radiusZ = 30f;
-        [SerializeField] private float gateHitRadius = 7f;
+        [SerializeField] private float gateHitRadius = 8f;
         [SerializeField] private float countdownFrom = 3.5f;
 
         private const string BestKey = "CR_BestTime";
@@ -29,8 +26,8 @@ namespace Autobazar.Racing
 
         private readonly List<Vector3> _gatePos = new List<Vector3>();
         private readonly List<Material> _gateMat = new List<Material>();
-        private int[] _order;       // pořadí průjezdu (brány 1..N-1, pak 0 = cíl)
-        private int _target;        // index v _order
+        private int[] _order;
+        private int _target;
         private float _raceTime;
         private float _bestTime;
         private float _countdown;
@@ -167,44 +164,40 @@ namespace Autobazar.Racing
 
         // ---------------- Trať ----------------
 
-        private Vector3 GatePos(float idx)
-        {
-            float a = 2f * Mathf.PI * idx / gateCount;
-            return new Vector3(radiusX * Mathf.Sin(a), 0f, radiusZ * Mathf.Cos(a));
-        }
-
         private void ComputeStart()
         {
-            _startPos = GatePos(-0.5f) + Vector3.up * 0.05f;
-            Vector3 dir = GatePos(0f) - _startPos; dir.y = 0f;
+            _startPos = TrackLayout.GatePos(-0.5f) + Vector3.up * 0.05f;
+            Vector3 dir = TrackLayout.GatePos(0f) - _startPos; dir.y = 0f;
             _startRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
         }
 
         private void BuildTrack()
         {
             var root = new GameObject("Track");
+            var world = GameObject.Find("RaceWorld");
+            if (world != null) root.transform.SetParent(world.transform, false);
 
-            // pořadí: brány 1..N-1, pak 0 (cíl)
-            _order = new int[gateCount];
-            for (int i = 0; i < gateCount - 1; i++) _order[i] = i + 1;
-            _order[gateCount - 1] = 0;
+            int n = TrackLayout.GateCount;
+            _order = new int[n];
+            for (int i = 0; i < n - 1; i++) _order[i] = i + 1;
+            _order[n - 1] = 0;
 
-            for (int i = 0; i < gateCount; i++)
+            for (int i = 0; i < n; i++)
             {
-                Vector3 pos = GatePos(i);
+                Vector3 pos = TrackLayout.GatePos(i);
                 _gatePos.Add(pos);
 
-                Vector3 tangent = (GatePos(i + 1) - GatePos(i - 1)); tangent.y = 0f; tangent.Normalize();
+                Vector3 tangent = (TrackLayout.GatePos(i + 1) - TrackLayout.GatePos(i - 1)); tangent.y = 0f; tangent.Normalize();
                 Vector3 perp = Vector3.Cross(Vector3.up, tangent);
 
                 var mat = MaterialFactory.CreateEmissive(new Color(0.1f, 0.12f, 0.2f), new Color(0.1f, 0.2f, 0.5f), 0.4f);
                 _gateMat.Add(mat);
 
-                CreatePillar(root.transform, pos + perp * 4.5f, mat);
-                CreatePillar(root.transform, pos - perp * 4.5f, mat);
+                CreatePillar(root.transform, pos + perp * 5f, mat);
+                CreatePillar(root.transform, pos - perp * 5f, mat);
 
                 string label = i == 0 ? "CÍL" : i.ToString();
-                TextFactory.Create(label, root.transform, pos + Vector3.up * 6f, 90, 0.32f, Color.white, TextAnchor.MiddleCenter, true);
+                TextFactory.Create(label, root.transform, pos + Vector3.up * 6.5f, 90, 0.34f, Color.white, TextAnchor.MiddleCenter, true);
             }
         }
 
@@ -215,8 +208,8 @@ namespace Autobazar.Racing
             var col = p.GetComponent<Collider>();
             if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
             p.transform.SetParent(parent, false);
-            p.transform.position = pos + Vector3.up * 2.5f;
-            p.transform.localScale = new Vector3(0.5f, 5f, 0.5f);
+            p.transform.position = pos + Vector3.up * 2.75f;
+            p.transform.localScale = new Vector3(0.5f, 5.5f, 0.5f);
             p.GetComponent<Renderer>().sharedMaterial = mat;
         }
 

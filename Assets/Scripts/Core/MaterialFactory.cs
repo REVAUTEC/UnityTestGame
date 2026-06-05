@@ -9,20 +9,18 @@ namespace Autobazar.Core
     /// </summary>
     public static class MaterialFactory
     {
-        private static Shader _cachedShader;
-
+        // Záměrně bez cache – ať se po přepnutí render pipeline (na URP) zvolí správný shader.
         private static Shader GetShader()
         {
-            if (_cachedShader != null) return _cachedShader;
-
+            Shader shader = null;
             if (GraphicsSettings.currentRenderPipeline != null)
-                _cachedShader = Shader.Find("Universal Render Pipeline/Lit");
+                shader = Shader.Find("Universal Render Pipeline/Lit");
 
-            if (_cachedShader == null) _cachedShader = Shader.Find("Standard");
-            if (_cachedShader == null) _cachedShader = Shader.Find("Legacy Shaders/Diffuse");
-            if (_cachedShader == null) _cachedShader = Shader.Find("Sprites/Default");
+            if (shader == null) shader = Shader.Find("Standard");
+            if (shader == null) shader = Shader.Find("Legacy Shaders/Diffuse");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
 
-            return _cachedShader;
+            return shader;
         }
 
         /// <summary>Základní barevný materiál s volitelným leskem a kovovostí.</summary>

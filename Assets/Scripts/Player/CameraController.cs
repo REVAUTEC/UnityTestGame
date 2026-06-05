@@ -1,10 +1,11 @@
 using UnityEngine;
+using Autobazar.Vehicles;
 
 namespace Autobazar.Player
 {
     /// <summary>
-    /// Kamera za autem (chase cam). Drží se za cílem podle jeho natočení, plynule dojíždí
-    /// a dívá se na auto. Žádné ovládání myší – ideální pro závodění.
+    /// Kamera za autem (chase cam). Drží se za cílem podle jeho natočení, plynule dojíždí,
+    /// dívá se na auto a při rychlosti/boostu rozšiřuje zorné pole (pocit rychlosti).
     /// </summary>
     public class CameraController : MonoBehaviour
     {
@@ -14,12 +15,24 @@ namespace Autobazar.Player
         [SerializeField] private float followSmooth = 9f;
         [SerializeField] private float rotateSmooth = 7f;
 
+        [SerializeField] private float baseFov = 62f;
+        [SerializeField] private float speedFov = 12f;
+        [SerializeField] private float boostFov = 9f;
+
         private Transform _target;
+        private CarController _car;
+        private Camera _cam;
         private float _yaw;
+
+        private void Awake()
+        {
+            _cam = GetComponent<Camera>();
+        }
 
         public void SetTarget(Transform t)
         {
             _target = t;
+            _car = t != null ? t.GetComponent<CarController>() : null;
             if (t != null)
             {
                 _yaw = t.eulerAngles.y;
@@ -31,12 +44,17 @@ namespace Autobazar.Player
         {
             if (_target == null) return;
 
-            // Plynule dorovnáváme natočení za auto.
             _yaw = Mathf.LerpAngle(_yaw, _target.eulerAngles.y, rotateSmooth * Time.deltaTime);
 
             Vector3 desired = DesiredPosition(_yaw);
             transform.position = Vector3.Lerp(transform.position, desired, followSmooth * Time.deltaTime);
             transform.LookAt(_target.position + Vector3.up * lookHeight);
+
+            if (_cam != null && _car != null)
+            {
+                float target = baseFov + _car.Speed01 * speedFov + (_car.Boosting ? boostFov : 0f);
+                _cam.fieldOfView = Mathf.Lerp(_cam.fieldOfView, target, 5f * Time.deltaTime);
+            }
         }
 
         private void SnapBehind()
