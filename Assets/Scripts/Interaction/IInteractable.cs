@@ -18,6 +18,9 @@ namespace Autobazar.Interaction
         /// <summary>Lze s objektem právě teď interagovat?</summary>
         bool CanInteract();
 
+        /// <summary>Zvýraznění, když se na objekt hráč dívá / je nejblíž (vizuální zpětná vazba).</summary>
+        void SetHighlighted(bool on);
+
         /// <summary>Provede interakci.</summary>
         void Interact(PlayerController player);
     }

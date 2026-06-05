@@ -40,11 +40,19 @@ namespace Autobazar.Interaction
 
         private void Update()
         {
-            _current = FindBest();
+            IInteractable best = FindBest();
+
+            // Při změně cíle přehodíme zvýraznění (zhasne starý, rozsvítí nový).
+            if (!ReferenceEquals(best, _current))
+            {
+                if (_current != null) _current.SetHighlighted(false);
+                _current = best;
+                if (_current != null) _current.SetHighlighted(true);
+            }
 
             if (UIManager.Instance != null)
             {
-                if (_current != null) UIManager.Instance.ShowPrompt($"[E] {_current.GetInteractionPrompt()}");
+                if (_current != null) UIManager.Instance.ShowPrompt($"[E]  {_current.GetInteractionPrompt()}");
                 else UIManager.Instance.HidePrompt();
             }
 

@@ -20,6 +20,17 @@ namespace Autobazar.EditorTools
             Debug.Log("[Autobazar] Hotovo. Ulož scénu (Ctrl+S) a stiskni Play.");
         }
 
+        [MenuItem("Autobazar/Rebuild Scene (Clear + Build)")]
+        public static void RebuildScene()
+        {
+            // Použij po každém stažení nového kódu, ať se svět postaví podle nové verze.
+            DestroyByName("AutobazarWorld");
+            DestroyByName("Sun");
+            WorldBuilder.BuildWorld();
+            EditorSceneManager.MarkAllScenesDirty();
+            Debug.Log("[Autobazar] Scéna přestavěna podle aktuálního kódu. Ulož (Ctrl+S) a Play.");
+        }
+
         [MenuItem("Autobazar/Clear Scene")]
         public static void ClearScene()
         {
