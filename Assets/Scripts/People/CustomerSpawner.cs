@@ -102,35 +102,19 @@ namespace Autobazar.People
             return palette[Random.Range(0, palette.Length)];
         }
 
+        private static readonly string[] Genders = { "male", "female" };
+
         private static GameObject BuildCustomerObject(Vector3 pos, Color shirt)
         {
             var go = new GameObject("Customer");
             go.transform.position = pos;
 
-            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            body.name = "Body";
-            DestroyCollider(body);
-            body.transform.SetParent(go.transform, false);
-            body.transform.localPosition = new Vector3(0f, 1f, 0f);
-            body.transform.localScale = new Vector3(0.7f, 1f, 0.7f);
-            body.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Create(shirt, 0.3f);
-
-            var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            head.name = "Head";
-            DestroyCollider(head);
-            head.transform.SetParent(go.transform, false);
-            head.transform.localPosition = new Vector3(0f, 1.8f, 0f);
-            head.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
-            head.GetComponent<Renderer>().sharedMaterial = MaterialFactory.Create(new Color(0.95f, 0.8f, 0.66f));
+            // Náhodná postava zákazníka (model z Kits/People, jinak kapsle).
+            char letter = (char)('a' + Random.Range(0, 6));
+            string model = $"character-{Genders[Random.Range(0, Genders.Length)]}-{letter}";
+            ModelLibrary.SpawnHuman(go, model, shirt, 1.7f);
 
             return go;
-        }
-
-        private static void DestroyCollider(GameObject go)
-        {
-            var c = go.GetComponent<Collider>();
-            if (c == null) return;
-            if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
         }
     }
 }

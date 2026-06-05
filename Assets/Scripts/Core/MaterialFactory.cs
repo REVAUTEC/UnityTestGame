@@ -54,6 +54,15 @@ namespace Autobazar.Core
             return Create(tint, smoothness: 0.92f, metallic: 0.1f);
         }
 
+        /// <summary>Materiál s texturou (např. Kenney colormap) – barva bílá, ať vynikne textura.</summary>
+        public static Material CreateTextured(Texture texture)
+        {
+            var mat = Create(Color.white, 0.3f, 0f);
+            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", texture);
+            if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", texture);
+            return mat;
+        }
+
         /// <summary>Zapne/nastaví emisi na existujícím materiálu (pro zvýraznění při interakci).</summary>
         public static void SetEmission(Material mat, Color color)
         {

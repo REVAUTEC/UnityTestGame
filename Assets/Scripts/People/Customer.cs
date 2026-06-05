@@ -149,6 +149,7 @@ namespace Autobazar.People
             CurrentState = State.Leaving;
 
             if (ReputationManager.Instance != null) ReputationManager.Instance.ChangeReputation(-5);
+            if (DayManager.Instance != null) DayManager.Instance.ReportLostCustomer();
             if (UIManager.Instance != null) UIManager.Instance.ShowMessage("Zákazník odešel naštvaný (-5 reputace).", 3f);
             if (TaskManager.Instance != null)
                 TaskManager.Instance.SetTask("Obsluhuj zákazníky rychleji – počkej na dalšího u vstupu.");

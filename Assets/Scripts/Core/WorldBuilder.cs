@@ -27,7 +27,6 @@ namespace Autobazar.Core
             }
 
             GameState.InputLocked = false;
-            ModelLibrary.ClearCache();
 
             var root = new GameObject(RootName);
 
@@ -118,6 +117,7 @@ namespace Autobazar.Core
             if (Object.FindFirstObjectByType<DialogUI>() == null) go.AddComponent<DialogUI>();
             if (Object.FindFirstObjectByType<CarServiceUI>() == null) go.AddComponent<CarServiceUI>();
             if (Object.FindFirstObjectByType<TestDriveManager>() == null) go.AddComponent<TestDriveManager>();
+            if (Object.FindFirstObjectByType<DayManager>() == null) go.AddComponent<DayManager>();
             if (Object.FindFirstObjectByType<CustomerSpawner>() == null) go.AddComponent<CustomerSpawner>();
         }
 
@@ -138,32 +138,8 @@ namespace Autobazar.Core
             player.AddComponent<PlayerController>();
             player.AddComponent<InteractionSystem>();
 
-            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            body.name = "Body";
-            SafeDestroy(body.GetComponent<Collider>());
-            body.transform.SetParent(player.transform, false);
-            body.transform.localPosition = new Vector3(0f, 1f, 0f);
-            body.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
-            body.GetComponent<Renderer>().sharedMaterial =
-                MaterialFactory.Create(new Color(0.2f, 0.45f, 0.85f), smoothness: 0.4f);
-
-            var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            head.name = "Head";
-            SafeDestroy(head.GetComponent<Collider>());
-            head.transform.SetParent(player.transform, false);
-            head.transform.localPosition = new Vector3(0f, 1.75f, 0f);
-            head.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
-            head.GetComponent<Renderer>().sharedMaterial =
-                MaterialFactory.Create(new Color(0.95f, 0.8f, 0.66f));
-
-            var nose = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            nose.name = "Nose";
-            SafeDestroy(nose.GetComponent<Collider>());
-            nose.transform.SetParent(player.transform, false);
-            nose.transform.localPosition = new Vector3(0f, 1.75f, 0.27f);
-            nose.transform.localScale = new Vector3(0.12f, 0.12f, 0.12f);
-            nose.GetComponent<Renderer>().sharedMaterial =
-                MaterialFactory.Create(new Color(0.9f, 0.7f, 0.55f));
+            // Postava prodavače (model z Kits/People, jinak kapsle). Kolize řeší CharacterController.
+            ModelLibrary.SpawnHuman(player, "character-male-a", new Color(0.2f, 0.45f, 0.85f), 1.85f);
 
             TextFactory.Create("PRODAVAČ", player.transform, new Vector3(0f, 2.5f, 0f),
                 50, 0.075f, Color.white, TextAnchor.LowerCenter, true);
@@ -269,13 +245,13 @@ namespace Autobazar.Core
 
         private static void BuildParkingAndCars(Transform parent)
         {
-            var defs = new (string name, CarType type, int price, int cond, int attr, bool service, Color color)[]
+            var defs = new (string name, CarType type, int price, int cond, int attr, bool service, Color color, string model)[]
             {
-                ("Škoda Felicia", CarType.Levne,     35000,  60, 40, true,  new Color(0.75f, 0.2f, 0.2f)),
-                ("VW Golf",       CarType.Rodinne,    95000,  80, 65, false, new Color(0.78f, 0.78f, 0.8f)),
-                ("BMW E46",       CarType.Sportovni, 150000,  55, 82, true,  new Color(0.12f, 0.22f, 0.55f)),
-                ("Ford Transit",  CarType.Pracovni,  120000,  70, 45, false, new Color(0.92f, 0.92f, 0.94f)),
-                ("Toyota Corolla",CarType.Rodinne,   110000,  90, 70, false, new Color(0.18f, 0.5f, 0.28f)),
+                ("Škoda Felicia", CarType.Levne,     35000,  60, 40, true,  new Color(0.75f, 0.2f, 0.2f),   "hatchback-sports"),
+                ("VW Golf",       CarType.Rodinne,    95000,  80, 65, false, new Color(0.78f, 0.78f, 0.8f),  "sedan"),
+                ("BMW E46",       CarType.Sportovni, 150000,  55, 82, true,  new Color(0.12f, 0.22f, 0.55f), "sedan-sports"),
+                ("Ford Transit",  CarType.Pracovni,  120000,  70, 45, false, new Color(0.92f, 0.92f, 0.94f), "van"),
+                ("Toyota Corolla",CarType.Rodinne,   110000,  90, 70, false, new Color(0.18f, 0.5f, 0.28f),  "suv"),
             };
 
             float[] xs = { -12f, -6f, 0f, 6f, 12f };
@@ -303,22 +279,22 @@ namespace Autobazar.Core
                     needsService = d.service
                 };
 
-                BuildCar(parent, data, new Vector3(xs[i], 0f, z), 180f, d.color, i);
+                BuildCar(parent, data, new Vector3(xs[i], 0f, z), 180f, d.color, d.model);
             }
         }
 
-        private static void BuildCar(Transform parent, CarData data, Vector3 position, float eulerY, Color bodyColor, int index)
+        private static void BuildCar(Transform parent, CarData data, Vector3 position, float eulerY, Color bodyColor, string modelName)
         {
             var car = new GameObject(data.carName);
             car.transform.SetParent(parent, false);
             car.transform.position = position;
             car.transform.rotation = Quaternion.Euler(0f, eulerY, 0f);
 
-            // Když jsou nahrané hotové modely (Assets/Resources/Kits/Cars), použijeme je.
-            // Jinak postavíme auto z kostek (záloha) – hra běží tak jako tak.
+            // Když je nahraný model auta, použijeme ho; jinak postavíme auto z kostek (záloha).
             bool built = false;
-            var model = ModelLibrary.GetCar(index);
-            if (model != null && ModelLibrary.SpawnCarModel(car, model))
+            var model = ModelLibrary.Load("Cars", modelName);
+            if (model != null && ModelLibrary.Spawn(car, model, ModelLibrary.CarTargetLength,
+                    ModelLibrary.Fit.CarLength, bodyColor, "Cars", ModelLibrary.CarYaw) != null)
             {
                 var box = car.AddComponent<BoxCollider>();
                 box.center = new Vector3(0f, 0.6f, 0f);
@@ -452,8 +428,25 @@ namespace Autobazar.Core
             pl.intensity = 2.2f;
         }
 
+        private static readonly string[] TreeModels =
+            { "tree_default", "tree_oak", "tree_pineDefaultA", "tree_fat", "tree_detailed", "tree_pineRoundB" };
+
         private static void BuildTree(Transform parent, Vector3 basePos)
         {
+            var prefab = ModelLibrary.Load("Props", TreeModels[Random.Range(0, TreeModels.Length)]);
+            if (prefab != null)
+            {
+                var root = new GameObject("Tree");
+                root.transform.SetParent(parent, false);
+                root.transform.position = basePos;
+                root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                if (ModelLibrary.Spawn(root, prefab, Random.Range(3.5f, 5f), ModelLibrary.Fit.Height,
+                        new Color(0.22f, 0.5f, 0.24f), "Props", 0f) != null)
+                    return;
+                SafeDestroy(root);
+            }
+
+            // Záloha: procedurální strom z válce a koulí.
             CreatePart(PrimitiveType.Cylinder, "Tree_Trunk", parent, basePos + Vector3.up * 1.5f,
                 new Vector3(0.4f, 1.5f, 0.4f), new Color(0.34f, 0.23f, 0.14f));
             CreatePart(PrimitiveType.Sphere, "Tree_Canopy1", parent, basePos + Vector3.up * 3.2f,

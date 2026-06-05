@@ -36,13 +36,10 @@ namespace Autobazar.Vehicles
 
         private void Start()
         {
-            // Najdeme materiál laku, abychom uměli auto rozsvítit.
+            // Materiál pro rozsvícení: u kostky je to "Body", u modelu první renderer.
             var body = transform.Find("Body");
-            if (body != null)
-            {
-                var r = body.GetComponent<Renderer>();
-                if (r != null) _paintMaterial = r.sharedMaterial;
-            }
+            Renderer r = body != null ? body.GetComponent<Renderer>() : GetComponentInChildren<Renderer>();
+            if (r != null) _paintMaterial = r.sharedMaterial;
 
             BuildLabel();
             RefreshLabel();

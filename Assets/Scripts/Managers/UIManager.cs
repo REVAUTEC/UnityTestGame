@@ -14,7 +14,7 @@ namespace Autobazar.Managers
     {
         public static UIManager Instance { get; private set; }
 
-        private Text _moneyText, _reputationText, _carsSoldText, _taskText, _promptText, _messageText;
+        private Text _moneyText, _reputationText, _carsSoldText, _taskText, _promptText, _messageText, _dayText;
         private Image _promptPanel, _messagePanel;
 
         private GameObject _progressPanel;
@@ -78,6 +78,14 @@ namespace Autobazar.Managers
         public void SetReputation(int value) { if (_reputationText) _reputationText.text = $"Reputace: {value}/100"; }
         public void SetCarsSold(int value) { if (_carsSoldText) _carsSoldText.text = $"Prodáno aut: {value}"; }
         public void SetTask(string task) { if (_taskText) _taskText.text = "ÚKOL:  " + task; }
+
+        public void SetDayInfo(int day, float timeLeft)
+        {
+            if (!_dayText) return;
+            int m = Mathf.Max(0, Mathf.FloorToInt(timeLeft / 60f));
+            int s = Mathf.Max(0, Mathf.FloorToInt(timeLeft % 60f));
+            _dayText.text = $"Den {day}    {m}:{s:00}";
+        }
 
         public void ShowPrompt(string prompt)
         {
@@ -159,6 +167,10 @@ namespace Autobazar.Managers
 
             CreatePanel(canvasT, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -22), new Vector2(1180, 60), panelColor);
             _taskText = CreateText(canvasT, "Task", new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(1140, 50), 30, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.45f));
+
+            // Den + čas (vpravo nahoře)
+            CreatePanel(canvasT, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-20, -20), new Vector2(320, 60), panelColor);
+            _dayText = CreateText(canvasT, "Day", new Vector2(1, 1), new Vector2(-40, -30), new Vector2(280, 50), 32, TextAnchor.UpperRight, Color.white);
 
             _promptPanel = CreatePanel(canvasT, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 110), new Vector2(640, 66), new Color(0f, 0f, 0f, 0.62f));
             _promptText = CreateText(_promptPanel.transform, "Prompt", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620, 60), 30, TextAnchor.MiddleCenter, new Color(0.7f, 1f, 0.7f));
