@@ -3,6 +3,7 @@ using Autobazar.Core;
 using Autobazar.Interaction;
 using Autobazar.Managers;
 using Autobazar.Player;
+using Autobazar.UI;
 
 namespace Autobazar.Vehicles
 {
@@ -66,7 +67,7 @@ namespace Autobazar.Vehicles
 
         // ---------- IInteractable ----------
 
-        public string GetInteractionPrompt() => $"Prohlédnout: {data.carName}";
+        public string GetInteractionPrompt() => $"Servis: {data.carName}";
         public Transform GetTransform() => transform;
         public bool CanInteract() => !data.isSold;
 
@@ -88,15 +89,8 @@ namespace Autobazar.Vehicles
 
         public void Interact(PlayerController player)
         {
-            // Fáze 1: ukážeme detail auta. (Prodej a zákazníci přijdou ve Fázi 2.)
-            string info =
-                $"<b>{data.carName}</b>   ({data.GetTypeText()})\n" +
-                $"Cena: {data.price:n0} Kč\n" +
-                $"Stav: {data.condition} %     Atraktivita: {data.attractiveness} %\n" +
-                $"Status: {data.GetStatusText()}";
-
-            if (UIManager.Instance != null)
-                UIManager.Instance.ShowMessage(info, 4f);
+            // Otevře servisní menu auta (oprava, mytí, leštění…).
+            if (CarServiceUI.Instance != null) CarServiceUI.Instance.Open(this);
         }
     }
 }

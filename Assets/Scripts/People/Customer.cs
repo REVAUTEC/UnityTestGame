@@ -21,6 +21,7 @@ namespace Autobazar.People
         public CarType DesiredType { get; private set; }
         public State CurrentState { get; private set; } = State.Entering;
         public int SpotIndex { get; set; } = -1;
+        public bool IsReserved { get; private set; }
 
         private Vector3 _waitTarget;
         private Vector3 _exitTarget;
@@ -70,7 +71,9 @@ namespace Autobazar.People
                     break;
 
                 case State.Waiting:
-                    if (!GameState.InputLocked) // během dialogu trpělivost neubývá
+                    // Trpělivost ubývá jen když zákazník čeká na obsluhu
+                    // (ne během dialogu a ne když už má rezervaci/čeká na smlouvu).
+                    if (!GameState.InputLocked && !IsReserved)
                     {
                         _patience -= Time.deltaTime / _patienceDuration;
                         if (_patience <= 0f) { _patience = 0f; LeaveUnhappy(); }
@@ -108,16 +111,27 @@ namespace Autobazar.People
         {
             if (_patienceLabel == null) return;
 
-            if (CurrentState == State.Waiting)
-            {
-                int pct = Mathf.RoundToInt(_patience * 100f);
-                _patienceLabel.text = $"Trpělivost: {pct}%";
-                _patienceLabel.color = Color.Lerp(Color.red, Color.green, _patience);
-            }
-            else if (CurrentState == State.Leaving)
+            if (IsReserved || CurrentState != State.Waiting)
             {
                 _patienceLabel.text = "";
+                return;
             }
+
+            int pct = Mathf.RoundToInt(_patience * 100f);
+            _patienceLabel.text = $"Trpělivost: {pct}%";
+            _patienceLabel.color = Color.Lerp(Color.red, Color.green, _patience);
+        }
+
+        /// <summary>Zákazník souhlasil – čeká, až hráč vyřídí smlouvu (trpělivost se zastaví).</summary>
+        public void MarkReserved()
+        {
+            IsReserved = true;
+            if (_wishLabel != null)
+            {
+                _wishLabel.text = "Souhlasí – čeká na smlouvu";
+                _wishLabel.color = new Color(0.5f, 0.8f, 1f);
+            }
+            if (_patienceLabel != null) _patienceLabel.text = "";
         }
 
         /// <summary>Úspěšný prodej – zákazník odejde spokojený.</summary>
@@ -151,7 +165,7 @@ namespace Autobazar.People
 
         public string GetInteractionPrompt() => "Promluvit se zákazníkem";
         public Transform GetTransform() => transform;
-        public bool CanInteract() => CurrentState == State.Waiting && !_finished;
+        public bool CanInteract() => CurrentState == State.Waiting && !_finished && !IsReserved;
 
         public void SetHighlighted(bool on)
         {

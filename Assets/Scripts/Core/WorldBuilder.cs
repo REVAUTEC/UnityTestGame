@@ -6,6 +6,7 @@ using Autobazar.Interaction;
 using Autobazar.Vehicles;
 using Autobazar.People;
 using Autobazar.UI;
+using Autobazar.Buildings;
 
 namespace Autobazar.Core
 {
@@ -114,6 +115,7 @@ namespace Autobazar.Core
             if (Object.FindFirstObjectByType<TaskManager>() == null) go.AddComponent<TaskManager>();
             if (Object.FindFirstObjectByType<UIManager>() == null) go.AddComponent<UIManager>();
             if (Object.FindFirstObjectByType<DialogUI>() == null) go.AddComponent<DialogUI>();
+            if (Object.FindFirstObjectByType<CarServiceUI>() == null) go.AddComponent<CarServiceUI>();
             if (Object.FindFirstObjectByType<CustomerSpawner>() == null) go.AddComponent<CustomerSpawner>();
         }
 
@@ -220,6 +222,30 @@ namespace Autobazar.Core
             CreateBox("Garage_Stripe", parent, new Vector3(18.6f, 3.8f, 0f), new Vector3(0.2f, 0.5f, 8f),
                 MaterialFactory.CreateEmissive(new Color(0.9f, 0.7f, 0.1f), new Color(0.9f, 0.6f, 0.1f), 0.6f));
             CreateSign("SERVIS", parent, new Vector3(19.5f, 4.7f, 0f), new Color(1f, 0.8f, 0.4f));
+
+            BuildOfficeDesk(parent);
+        }
+
+        private static void BuildOfficeDesk(Transform parent)
+        {
+            // Počítač na smlouvy – stojí před kanceláří, dosažitelný z plochy bazaru.
+            var deskRoot = new GameObject("OfficeComputer");
+            deskRoot.transform.SetParent(parent, false);
+            deskRoot.transform.position = new Vector3(-16.8f, 0f, 3f);
+
+            CreateBoxLocal("Desk", deskRoot.transform, new Vector3(0f, 0.45f, 0f), new Vector3(1.6f, 0.9f, 0.8f),
+                new Color(0.35f, 0.25f, 0.18f));
+            CreateBoxLocal("Stand", deskRoot.transform, new Vector3(0f, 1.0f, 0f), new Vector3(0.12f, 0.3f, 0.12f),
+                new Color(0.1f, 0.1f, 0.12f), collider: false);
+
+            var screen = CreateBoxLocal("Screen", deskRoot.transform, new Vector3(0f, 1.32f, 0.04f),
+                new Vector3(0.75f, 0.46f, 0.06f), Color.black, collider: false);
+            screen.GetComponent<Renderer>().sharedMaterial =
+                MaterialFactory.CreateEmissive(new Color(0.1f, 0.2f, 0.35f), new Color(0.2f, 0.5f, 0.9f), 0.9f);
+
+            deskRoot.AddComponent<OfficePaperwork>();
+
+            CreateSign("SMLOUVY", parent, new Vector3(-16.8f, 2.1f, 3f), new Color(0.7f, 0.9f, 1f));
         }
 
         // ---------------- Zóny ----------------

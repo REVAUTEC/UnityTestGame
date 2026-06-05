@@ -1,13 +1,14 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using Autobazar.Core;
 
 namespace Autobazar.Managers
 {
     /// <summary>
-    /// Postaví a aktualizuje herní HUD z kódu (žádné ruční klikání).
-    /// Ukazuje peníze, reputaci, počet prodaných aut, aktuální úkol,
-    /// výzvu k interakci a dočasné hlášky – vše na poloprůhledných panelech.
+    /// Herní HUD (peníze, reputace, prodáno, úkol), výzva k interakci, hlášky
+    /// a univerzální progress bar (servis, příprava smlouvy). Vše z kódu.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
@@ -15,6 +16,12 @@ namespace Autobazar.Managers
 
         private Text _moneyText, _reputationText, _carsSoldText, _taskText, _promptText, _messageText;
         private Image _promptPanel, _messagePanel;
+
+        private GameObject _progressPanel;
+        private Text _progressLabel;
+        private RectTransform _progressFill;
+        private bool _progressActive;
+        private const float ProgressBarWidth = 600f;
 
         private Font _font;
         private Coroutine _messageRoutine;
@@ -98,6 +105,37 @@ namespace Autobazar.Managers
             if (_messagePanel) _messagePanel.gameObject.SetActive(false);
         }
 
+        /// <summary>Univerzální progress bar. Po dokončení zavolá onComplete. Během běhu zamkne ovládání.</summary>
+        public void ShowProgress(string label, float duration, Action onComplete)
+        {
+            if (_progressActive) return; // jen jeden progress naráz
+            StartCoroutine(ProgressRoutine(label, Mathf.Max(0.1f, duration), onComplete));
+        }
+
+        private IEnumerator ProgressRoutine(string label, float duration, Action onComplete)
+        {
+            _progressActive = true;
+            GameState.InputLocked = true;
+            if (_progressPanel) _progressPanel.SetActive(true);
+
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float frac = Mathf.Clamp01(t / duration);
+                if (_progressFill) _progressFill.localScale = new Vector3(frac, 1f, 1f);
+                if (_progressLabel) _progressLabel.text = $"{label}…  {Mathf.RoundToInt(frac * 100f)}%";
+                yield return null;
+            }
+
+            if (_progressFill) _progressFill.localScale = Vector3.one;
+            if (_progressPanel) _progressPanel.SetActive(false);
+            GameState.InputLocked = false;
+            _progressActive = false;
+
+            onComplete?.Invoke();
+        }
+
         // ---------- Stavba UI ----------
 
         private void BuildUI()
@@ -114,25 +152,52 @@ namespace Autobazar.Managers
 
             var panelColor = new Color(0f, 0f, 0f, 0.5f);
 
-            // Panel se statistikami (vlevo nahoře)
             CreatePanel(canvasT, new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -20), new Vector2(430, 160), panelColor);
             _moneyText = CreateText(canvasT, "Money", new Vector2(0, 1), new Vector2(40, -34), new Vector2(380, 50), 40, TextAnchor.UpperLeft, new Color(0.6f, 1f, 0.6f));
             _reputationText = CreateText(canvasT, "Reputation", new Vector2(0, 1), new Vector2(40, -92), new Vector2(380, 40), 28, TextAnchor.UpperLeft, Color.white);
             _carsSoldText = CreateText(canvasT, "CarsSold", new Vector2(0, 1), new Vector2(40, -132), new Vector2(380, 40), 28, TextAnchor.UpperLeft, Color.white);
 
-            // Panel úkolu (nahoře uprostřed)
             CreatePanel(canvasT, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -22), new Vector2(1180, 60), panelColor);
             _taskText = CreateText(canvasT, "Task", new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(1140, 50), 30, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.45f));
 
-            // Výzva k interakci (dole uprostřed) – v panelu, který se skrývá
             _promptPanel = CreatePanel(canvasT, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 110), new Vector2(640, 66), new Color(0f, 0f, 0f, 0.62f));
             _promptText = CreateText(_promptPanel.transform, "Prompt", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620, 60), 30, TextAnchor.MiddleCenter, new Color(0.7f, 1f, 0.7f));
             _promptPanel.gameObject.SetActive(false);
 
-            // Hláška (uprostřed) – v panelu, který se skrývá
             _messagePanel = CreatePanel(canvasT, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -150), new Vector2(900, 190), new Color(0f, 0f, 0f, 0.68f));
             _messageText = CreateText(_messagePanel.transform, "Message", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860, 170), 30, TextAnchor.MiddleCenter, Color.white);
             _messagePanel.gameObject.SetActive(false);
+
+            BuildProgressBar(canvasT);
+        }
+
+        private void BuildProgressBar(Transform parent)
+        {
+            var panel = CreatePanel(parent, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, 70), new Vector2(700, 130), new Color(0f, 0f, 0f, 0.78f));
+            _progressPanel = panel.gameObject;
+
+            _progressLabel = CreateText(panel.transform, "ProgressLabel", new Vector2(0.5f, 0.5f),
+                new Vector2(0, 32), new Vector2(660, 50), 30, TextAnchor.MiddleCenter, Color.white);
+
+            // Pozadí lišty
+            var bg = CreatePanel(panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -22), new Vector2(ProgressBarWidth, 34), new Color(0.15f, 0.15f, 0.15f, 1f));
+
+            // Výplň lišty (kotvená vlevo, škáluje se zleva)
+            var fillGo = new GameObject("Fill");
+            fillGo.transform.SetParent(bg.transform, false);
+            var frt = fillGo.AddComponent<RectTransform>();
+            frt.anchorMin = new Vector2(0f, 0.5f);
+            frt.anchorMax = new Vector2(0f, 0.5f);
+            frt.pivot = new Vector2(0f, 0.5f);
+            frt.sizeDelta = new Vector2(ProgressBarWidth, 34);
+            frt.anchoredPosition = Vector2.zero;
+            fillGo.AddComponent<Image>().color = new Color(0.3f, 0.8f, 0.4f, 1f);
+            frt.localScale = new Vector3(0f, 1f, 1f);
+            _progressFill = frt;
+
+            _progressPanel.SetActive(false);
         }
 
         private Image CreatePanel(Transform parent, Vector2 anchor, Vector2 pivot, Vector2 anchoredPos, Vector2 size, Color color)

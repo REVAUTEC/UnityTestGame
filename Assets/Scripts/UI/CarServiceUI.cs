@@ -1,28 +1,28 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Autobazar.Core;
 using Autobazar.Managers;
-using Autobazar.People;
 using Autobazar.Vehicles;
 
 namespace Autobazar.UI
 {
     /// <summary>
-    /// Dialog se zákazníkem. Ukáže, co zákazník hledá, a seznam aut. Hráč stiskne
-    /// číslo auta (1–5) a nabídne ho; Esc dialog zavře. Ovládání klávesnicí je
-    /// jednoduché a spolehlivé (nepotřebuje EventSystem ani odemykání myši).
+    /// Servisní menu auta. Otevře se klávesou E u auta. Hráč vybere opravu (1–4),
+    /// zaplatí, proběhne progress bar a auto se vylepší. Esc zavře.
     /// </summary>
-    public class DialogUI : MonoBehaviour
+    public class CarServiceUI : MonoBehaviour
     {
-        public static DialogUI Instance { get; private set; }
+        public static CarServiceUI Instance { get; private set; }
 
         private GameObject _panel;
         private Text _titleText, _bodyText;
         private Font _font;
+        private CarInteractable _car;
 
-        private Customer _customer;
-        private readonly List<CarInteractable> _offered = new List<CarInteractable>();
+        private static readonly RepairType[] Order =
+        {
+            RepairType.Wash, RepairType.Polish, RepairType.Engine, RepairType.Brakes
+        };
 
         private bool IsOpen => _panel != null && _panel.activeSelf;
 
@@ -43,25 +43,20 @@ namespace Autobazar.UI
 
             if (Input.GetKeyDown(KeyCode.Escape)) { Close(); return; }
 
-            for (int i = 0; i < _offered.Count && i < 9; i++)
+            for (int i = 0; i < Order.Length; i++)
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                 {
-                    Offer(i);
+                    DoRepair(Order[i]);
                     break;
                 }
             }
         }
 
-        public void Open(Customer customer)
+        public void Open(CarInteractable car)
         {
-            if (customer == null) return;
-            _customer = customer;
-
-            _offered.Clear();
-            _offered.AddRange(Object.FindObjectsByType<CarInteractable>(FindObjectsSortMode.None));
-            _offered.Sort((a, b) => string.Compare(a.Data.carName, b.Data.carName, System.StringComparison.Ordinal));
-
+            if (car == null) return;
+            _car = car;
             RefreshTexts();
             GameState.InputLocked = true;
             _panel.SetActive(true);
@@ -71,38 +66,63 @@ namespace Autobazar.UI
         {
             if (_panel != null) _panel.SetActive(false);
             GameState.InputLocked = false;
-            _customer = null;
+            _car = null;
         }
 
-        private void Offer(int index)
+        private void DoRepair(RepairType type)
         {
-            if (_customer == null || index < 0 || index >= _offered.Count) return;
+            if (_car == null) return;
 
-            var result = DealManager.Agree(_customer, _offered[index]);
-            if (UIManager.Instance != null) UIManager.Instance.ShowMessage(result.Message, 4f);
+            var info = ServiceManager.GetInfo(type);
 
-            if (result.Success) Close();
-            else RefreshTexts();
+            if (EconomyManager.Instance == null || !EconomyManager.Instance.TrySpendMoney(info.Cost))
+            {
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ShowMessage($"Nedostatek peněz na: {info.Name} ({info.Cost:n0} Kč)", 2.5f);
+                RefreshTexts();
+                return;
+            }
+
+            // Zaplaceno – schováme menu (necháme zámek) a spustíme progress.
+            var car = _car;
+            _car = null;
+            _panel.SetActive(false);
+
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.ShowProgress($"Servis: {info.Name}", ServiceManager.GetDuration(type), () =>
+                {
+                    ServiceManager.Apply(type, car);
+                    if (UIManager.Instance != null)
+                        UIManager.Instance.ShowMessage($"{info.Name} hotovo!  ({info.Effect})", 3f);
+                });
+            }
+            else
+            {
+                ServiceManager.Apply(type, car);
+                GameState.InputLocked = false; // záloha, kdyby chybělo UIManager
+            }
         }
 
         private void RefreshTexts()
         {
-            if (_customer == null) return;
+            if (_car == null) return;
+            var d = _car.Data;
 
-            _titleText.text = $"Zákazník hledá:  <color=#ffd24a>{CarData.TypeText(_customer.DesiredType)} auto</color>";
+            _titleText.text = $"{d.carName}  —  Servis";
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Nabídni mu auto – stiskni jeho číslo:\n");
-            for (int i = 0; i < _offered.Count; i++)
+            string serviceFlag = d.needsService ? "   <color=#ff9a3c>POTŘEBUJE SERVIS</color>" : "";
+            sb.AppendLine($"Stav: <color=#9fd8ff>{d.condition}%</color>    Atraktivita: <color=#9fd8ff>{d.attractiveness}%</color>{serviceFlag}");
+            sb.AppendLine($"Status: {d.GetStatusText()}\n");
+            sb.AppendLine("Vyber opravu (zaplatí se hned):\n");
+
+            for (int i = 0; i < Order.Length; i++)
             {
-                var d = _offered[i].Data;
-                if (d.isSold)
-                    sb.AppendLine($"<color=#777777>{i + 1})  {d.carName}  —  prodáno</color>");
-                else if (d.isReserved)
-                    sb.AppendLine($"<color=#777777>{i + 1})  {d.carName}  —  rezervováno</color>");
-                else
-                    sb.AppendLine($"<b>{i + 1})</b>  {d.carName}  —  {d.price:n0} Kč   <color=#ffd24a>[{d.GetTypeText()}]</color>   <color=#9fd8ff>stav {d.condition}%</color>");
+                var info = ServiceManager.GetInfo(Order[i]);
+                sb.AppendLine($"<b>{i + 1})</b>  {info.Name}  —  {info.Cost:n0} Kč   <color=#a7e0a7>({info.Effect})</color>");
             }
+
             sb.AppendLine("\n<color=#bbbbbb>Esc = zavřít</color>");
             _bodyText.text = sb.ToString();
         }
@@ -111,28 +131,28 @@ namespace Autobazar.UI
 
         private void BuildUI()
         {
-            var canvasGo = new GameObject("Dialog_Canvas");
+            var canvasGo = new GameObject("Service_Canvas");
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 10; // nad HUD
+            canvas.sortingOrder = 10;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
 
-            _panel = new GameObject("DialogPanel");
+            _panel = new GameObject("ServicePanel");
             _panel.transform.SetParent(canvasGo.transform, false);
             var prt = _panel.AddComponent<RectTransform>();
             prt.anchorMin = prt.anchorMax = prt.pivot = new Vector2(0.5f, 0.5f);
-            prt.sizeDelta = new Vector2(940, 660);
+            prt.sizeDelta = new Vector2(940, 600);
             prt.anchoredPosition = Vector2.zero;
-            _panel.AddComponent<Image>().color = new Color(0.05f, 0.06f, 0.09f, 0.92f);
+            _panel.AddComponent<Image>().color = new Color(0.06f, 0.07f, 0.06f, 0.92f);
 
             _titleText = CreateText(_panel.transform, "Title", new Vector2(0.5f, 1f),
                 new Vector2(0, -45), new Vector2(880, 70), 40, TextAnchor.MiddleCenter, Color.white);
 
             _bodyText = CreateText(_panel.transform, "Body", new Vector2(0.5f, 1f),
-                new Vector2(0, -110), new Vector2(860, 470), 30, TextAnchor.UpperLeft, Color.white);
+                new Vector2(0, -110), new Vector2(860, 420), 30, TextAnchor.UpperLeft, Color.white);
 
             _panel.SetActive(false);
         }
