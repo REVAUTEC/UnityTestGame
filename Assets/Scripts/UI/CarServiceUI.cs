@@ -48,9 +48,24 @@ namespace Autobazar.UI
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                 {
                     DoRepair(Order[i]);
-                    break;
+                    return;
                 }
             }
+
+            // 5 = zkušební jízda
+            if (Input.GetKeyDown(KeyCode.Alpha5) || Input.GetKeyDown(KeyCode.Keypad5))
+                StartTestDrive();
+        }
+
+        private void StartTestDrive()
+        {
+            if (_car == null) return;
+            var car = _car;
+            _car = null;
+            _panel.SetActive(false); // necháme zámek; TestDriveManager ho na konci uvolní
+
+            if (TestDriveManager.Instance != null) TestDriveManager.Instance.StartDrive(car);
+            else GameState.InputLocked = false;
         }
 
         public void Open(CarInteractable car)
@@ -122,6 +137,7 @@ namespace Autobazar.UI
                 var info = ServiceManager.GetInfo(Order[i]);
                 sb.AppendLine($"<b>{i + 1})</b>  {info.Name}  —  {info.Cost:n0} Kč   <color=#a7e0a7>({info.Effect})</color>");
             }
+            sb.AppendLine($"<b>5)</b>  Zkušební jízda   <color=#a7e0a7>(zdarma, dobrá jízda = +atraktivita)</color>");
 
             sb.AppendLine("\n<color=#bbbbbb>Esc = zavřít</color>");
             _bodyText.text = sb.ToString();

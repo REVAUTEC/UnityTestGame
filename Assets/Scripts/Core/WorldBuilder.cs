@@ -116,6 +116,7 @@ namespace Autobazar.Core
             if (Object.FindFirstObjectByType<UIManager>() == null) go.AddComponent<UIManager>();
             if (Object.FindFirstObjectByType<DialogUI>() == null) go.AddComponent<DialogUI>();
             if (Object.FindFirstObjectByType<CarServiceUI>() == null) go.AddComponent<CarServiceUI>();
+            if (Object.FindFirstObjectByType<TestDriveManager>() == null) go.AddComponent<TestDriveManager>();
             if (Object.FindFirstObjectByType<CustomerSpawner>() == null) go.AddComponent<CustomerSpawner>();
         }
 

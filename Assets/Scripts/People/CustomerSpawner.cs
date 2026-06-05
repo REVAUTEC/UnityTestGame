@@ -35,6 +35,9 @@ namespace Autobazar.People
 
         private void Update()
         {
+            // Během dialogu, servisu, papírování i testovací jízdy nespawnujeme (čas se pozastaví).
+            if (GameState.InputLocked) return;
+
             _timer -= Time.deltaTime;
             if (_timer <= 0f)
             {
