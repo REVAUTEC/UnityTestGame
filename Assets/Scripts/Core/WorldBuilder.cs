@@ -27,6 +27,7 @@ namespace Autobazar.Core
             }
 
             GameState.InputLocked = false;
+            ModelLibrary.ClearCache();
 
             var root = new GameObject(RootName);
 
@@ -302,17 +303,37 @@ namespace Autobazar.Core
                     needsService = d.service
                 };
 
-                BuildCar(parent, data, new Vector3(xs[i], 0f, z), 180f, d.color);
+                BuildCar(parent, data, new Vector3(xs[i], 0f, z), 180f, d.color, i);
             }
         }
 
-        private static void BuildCar(Transform parent, CarData data, Vector3 position, float eulerY, Color bodyColor)
+        private static void BuildCar(Transform parent, CarData data, Vector3 position, float eulerY, Color bodyColor, int index)
         {
             var car = new GameObject(data.carName);
             car.transform.SetParent(parent, false);
             car.transform.position = position;
             car.transform.rotation = Quaternion.Euler(0f, eulerY, 0f);
 
+            // Když jsou nahrané hotové modely (Assets/Resources/Kits/Cars), použijeme je.
+            // Jinak postavíme auto z kostek (záloha) – hra běží tak jako tak.
+            bool built = false;
+            var model = ModelLibrary.GetCar(index);
+            if (model != null && ModelLibrary.SpawnCarModel(car, model))
+            {
+                var box = car.AddComponent<BoxCollider>();
+                box.center = new Vector3(0f, 0.6f, 0f);
+                box.size = new Vector3(1.9f, 1.2f, ModelLibrary.CarTargetLength);
+                built = true;
+            }
+
+            if (!built) BuildCarFromCubes(car, bodyColor);
+
+            var interactable = car.AddComponent<CarInteractable>();
+            interactable.SetData(data);
+        }
+
+        private static void BuildCarFromCubes(GameObject car, Color bodyColor)
+        {
             // Lesklý metalízový lak (sdílený karoserií a kabinou).
             var paint = MaterialFactory.Create(bodyColor, smoothness: 0.72f, metallic: 0.55f);
 
@@ -346,9 +367,6 @@ namespace Autobazar.Core
             BuildWheel(car.transform, new Vector3(-0.96f, 0.35f, 1.3f), wheelColor);
             BuildWheel(car.transform, new Vector3(0.96f, 0.35f, -1.3f), wheelColor);
             BuildWheel(car.transform, new Vector3(-0.96f, 0.35f, -1.3f), wheelColor);
-
-            var interactable = car.AddComponent<CarInteractable>();
-            interactable.SetData(data);
         }
 
         private static void BuildWheel(Transform parent, Vector3 localPos, Color color)
