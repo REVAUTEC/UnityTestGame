@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Autobazar.Core;
 using Autobazar.Managers;
 using Autobazar.Player;
 
@@ -40,6 +41,14 @@ namespace Autobazar.Interaction
 
         private void Update()
         {
+            // Během dialogu zhasneme zvýraznění a výzvu a neinteragujeme.
+            if (GameState.InputLocked)
+            {
+                if (_current != null) { _current.SetHighlighted(false); _current = null; }
+                if (UIManager.Instance != null) UIManager.Instance.HidePrompt();
+                return;
+            }
+
             IInteractable best = FindBest();
 
             // Při změně cíle přehodíme zvýraznění (zhasne starý, rozsvítí nový).

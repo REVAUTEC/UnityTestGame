@@ -23,8 +23,8 @@ namespace Autobazar.Managers
 
         private void Start()
         {
-            // Výchozí úkol pro Fázi 1.
-            SetTask("Projdi se po autobazaru a prohlédni si auta (přijdi k autu a stiskni E).");
+            // Výchozí úkol.
+            SetTask("Počkej na zákazníka u vstupu. Až přijde, dojdi k němu a stiskni E.");
         }
 
         /// <summary>Nastaví aktuální úkol.</summary>

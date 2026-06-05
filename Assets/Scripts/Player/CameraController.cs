@@ -1,4 +1,5 @@
 using UnityEngine;
+using Autobazar.Core;
 
 namespace Autobazar.Player
 {
@@ -36,7 +37,7 @@ namespace Autobazar.Player
         {
             if (target == null) return;
 
-            if (Cursor.lockState == CursorLockMode.Locked)
+            if (!GameState.InputLocked && Cursor.lockState == CursorLockMode.Locked)
             {
                 _pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
                 _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);

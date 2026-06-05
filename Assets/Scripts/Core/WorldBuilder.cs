@@ -4,6 +4,8 @@ using Autobazar.Managers;
 using Autobazar.Player;
 using Autobazar.Interaction;
 using Autobazar.Vehicles;
+using Autobazar.People;
+using Autobazar.UI;
 
 namespace Autobazar.Core
 {
@@ -22,6 +24,8 @@ namespace Autobazar.Core
                 Debug.Log("[Autobazar] Svět už ve scéně existuje – nestavím znovu.");
                 return;
             }
+
+            GameState.InputLocked = false;
 
             var root = new GameObject(RootName);
 
@@ -109,6 +113,8 @@ namespace Autobazar.Core
             if (Object.FindFirstObjectByType<ReputationManager>() == null) go.AddComponent<ReputationManager>();
             if (Object.FindFirstObjectByType<TaskManager>() == null) go.AddComponent<TaskManager>();
             if (Object.FindFirstObjectByType<UIManager>() == null) go.AddComponent<UIManager>();
+            if (Object.FindFirstObjectByType<DialogUI>() == null) go.AddComponent<DialogUI>();
+            if (Object.FindFirstObjectByType<CustomerSpawner>() == null) go.AddComponent<CustomerSpawner>();
         }
 
         private static GameObject BuildPlayer(Transform parent)

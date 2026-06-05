@@ -1,4 +1,5 @@
 using UnityEngine;
+using Autobazar.Core;
 
 namespace Autobazar.Player
 {
@@ -38,6 +39,9 @@ namespace Autobazar.Player
 
         private void Update()
         {
+            // Během dialogu/menu se hráč nehýbe.
+            if (GameState.InputLocked) return;
+
             HandleCursorLock();
             HandleRotation();
             HandleMovement();

@@ -45,7 +45,10 @@ namespace Autobazar.Vehicles
         }
 
         /// <summary>Lidsky čitelný název typu auta.</summary>
-        public string GetTypeText()
+        public string GetTypeText() => TypeText(type);
+
+        /// <summary>Lidsky čitelný název libovolného typu auta.</summary>
+        public static string TypeText(CarType type)
         {
             switch (type)
             {
