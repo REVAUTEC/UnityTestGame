@@ -1,0 +1,50 @@
+# ---- Unity ----
+# Generované a dočasné složky (NEpatří do gitu, Unity si je vytvoří samo)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Asset meta data jen pro soubory, které jsou ignorované
+!/[Aa]ssets/**/*.meta
+
+# Autogenerované projektové soubory IDE
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D vygenerované crash reporty
+sysinfo.txt
+
+# Build výstupy
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# JetBrains Rider / VS Code
+.idea/
+.vscode/
+.vs/
+
+# OS soubory
+.DS_Store
+Thumbs.db
